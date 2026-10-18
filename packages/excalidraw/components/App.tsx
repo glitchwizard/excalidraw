@@ -709,6 +709,7 @@ class App extends React.Component<AppProps, AppState> {
   /** current frame pointer cords */
   lastPointerMoveCoords: { x: number; y: number } | null = null;
   private lastCompletedCanvasClicks: { x: number; y: number }[] = [];
+  private isNudgingSelectedElements = false;
 
   drawShape = new AppDrawShape(this);
   laserTrails = new LaserTrails(this);
@@ -3198,6 +3199,7 @@ class App extends React.Component<AppProps, AppState> {
   // Lifecycle
 
   private onBlur = withBatchedUpdates(() => {
+    this.isNudgingSelectedElements = false;
     this.pan.setSpaceHeld(false);
     this.modifiers.reset();
     this.setState({
@@ -5447,6 +5449,7 @@ class App extends React.Component<AppProps, AppState> {
           });
         });
 
+        this.isNudgingSelectedElements = selectedElements.length > 0;
         this.scene.triggerUpdate();
 
         event.preventDefault();
@@ -5584,6 +5587,11 @@ class App extends React.Component<AppProps, AppState> {
   );
 
   private onKeyUp = withBatchedUpdates((event: KeyboardEvent) => {
+    const shouldFinalizeNudge =
+      isArrowKey(event.key) && this.isNudgingSelectedElements;
+    if (isArrowKey(event.key)) {
+      this.isNudgingSelectedElements = false;
+    }
     this.modifiers.sync(event);
     if (!this.isInteractionEnabled()) {
       return;
@@ -5659,7 +5667,7 @@ class App extends React.Component<AppProps, AppState> {
 
       maybeHandleArrowPointlikeDrag({ app: this, event });
     }
-    if (isArrowKey(event.key)) {
+    if (shouldFinalizeNudge) {
       bindOrUnbindBindingElements(
         this.scene.getSelectedElements(this.state).filter(isArrowElement),
         this.scene,
